@@ -16,8 +16,6 @@ ARG LINK_PYTHON_TO_PYTHON3=1
 RUN apt-get -qq -y update && \
     apt-get -qq -y upgrade && \
     DEBIAN_FRONTEND=noninteractive apt-get -qq -y install \
-        gcc \
-        g++ \
         zlibc \
         zlib1g-dev \
         libssl-dev \
@@ -48,6 +46,19 @@ RUN apt-get -qq -y update && \
 COPY install_python.sh install_python.sh
 RUN bash install_python.sh ${PYTHON_VERSION_TAG} ${LINK_PYTHON_TO_PYTHON3} && \
     rm -r install_python.sh Python-${PYTHON_VERSION_TAG}
+
+RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda2-4.5.11-Linux-x86_64.sh -O ~/miniconda.sh && \
+    /bin/bash ~/miniconda.sh -b -p /opt/conda && \
+    rm ~/miniconda.sh && \
+    ln -s /opt/conda/etc/profile.d/conda.sh /etc/profile.d/conda.sh && \
+    echo ". /opt/conda/etc/profile.d/conda.sh" >> ~/.bashrc && \
+    echo "conda activate base" >> ~/.bashrc
+RUN apt-get install -y curl grep sed dpkg && \
+    TINI_VERSION=`curl https://github.com/krallin/tini/releases/latest | grep -o "/v.*\"" | sed 's:^..\(.*\).$:\1:'` && \
+    curl -L "https://github.com/krallin/tini/releases/download/v${TINI_VERSION}/tini_${TINI_VERSION}.deb" > tini.deb && \
+    dpkg -i tini.deb && \
+    rm tini.deb && \
+    apt-get clean
 
 # Enable tab completion by uncommenting it from /etc/bash.bashrc
 # The relevant lines are those below the phrase "enable bash completion in interactive shells"
